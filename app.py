@@ -93,59 +93,59 @@ with st.sidebar:
         label_visibility="collapsed",
     )
 
-    st.header("Example Text")
-    with st.spinner("Loading example text..."):
-        reload_example_text_data(selected_language)
-    st.table(st.session_state.examplesdf)
-    st.button("Reload", on_click=reload_example_text_data, args=(selected_language,))
+st.header("Example Text")
+with st.spinner("Loading example text..."):
+    reload_example_text_data(selected_language)
+st.table(st.session_state.examplesdf)
+st.button("Reload", on_click=reload_example_text_data, args=(selected_language,))
 
-    tokenizer_to_num_tokens = defaultdict(list)
-    for _, row in tqdm.tqdm(val_data.iterrows(), total=len(val_data)):
-        text = row["text"]
-        for tokenizer_name in selected_tokenizers:
-            tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-            num_tokens = len(tokenizer(text)["input_ids"])
-            tokenizer_to_num_tokens[tokenizer_name].append(num_tokens)
+tokenizer_to_num_tokens = defaultdict(list)
+for _, row in tqdm.tqdm(val_data.iterrows(), total=len(val_data)):
+    text = row["text"]
+    for tokenizer_name in selected_tokenizers:
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+        num_tokens = len(tokenizer(text)["input_ids"])
+        tokenizer_to_num_tokens[tokenizer_name].append(num_tokens)
 
-    if selected_figure == "Boxplot":
-        fig = go.Figure()
-        for tokenizer_name in selected_tokenizers:
-            fig.add_trace(
-                go.Box(y=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name)
-            )
-        fig.update_layout(
-            title=f"Distribution of Number of Tokens for Selected Tokenizers",
-            xaxis_title="Tokenizer",
-            yaxis_title="Number of Tokens",
+if selected_figure == "Boxplot":
+    fig = go.Figure()
+    for tokenizer_name in selected_tokenizers:
+        fig.add_trace(
+            go.Box(y=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name)
         )
-        st.plotly_chart(fig)
-    elif selected_figure == "Histogram":
-        fig = make_subplots(
-            rows=len(selected_tokenizers), cols=1, subplot_titles=selected_tokenizers
+    fig.update_layout(
+        title=f"Distribution of Number of Tokens for Selected Tokenizers",
+        xaxis_title="Tokenizer",
+        yaxis_title="Number of Tokens",
+    )
+    st.plotly_chart(fig)
+elif selected_figure == "Histogram":
+    fig = make_subplots(
+        rows=len(selected_tokenizers), cols=1, subplot_titles=selected_tokenizers
+    )
+    for i, tokenizer_name in enumerate(selected_tokenizers):
+        fig.add_trace(
+            go.Histogram(
+                x=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name
+            ),
+            row=i + 1,
+            col=1,
         )
-        for i, tokenizer_name in enumerate(selected_tokenizers):
-            fig.add_trace(
-                go.Histogram(
-                    x=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name
-                ),
-                row=i + 1,
-                col=1,
-            )
-        fig.update_layout(
-            height=200 * len(selected_tokenizers),
-            title_text="Histogram of Number of Tokens",
-        )
-        st.plotly_chart(fig)
-    elif selected_figure == "Scatterplot":
-        df = pd.DataFrame(tokenizer_to_num_tokens)
-        fig = px.scatter_matrix(
-            df,
-            dimensions=selected_tokenizers,
-            color_discrete_sequence=px.colors.qualitative.Plotly,
-        )
-        fig.update_layout(
-            title=f"Scatterplot Matrix of Number of Tokens for Selected Tokenizers",
-            width=800,
-            height=800,
-        )
-        st.plotly_chart(fig)
+    fig.update_layout(
+        height=200 * len(selected_tokenizers),
+        title_text="Histogram of Number of Tokens",
+    )
+    st.plotly_chart(fig)
+elif selected_figure == "Scatterplot":
+    df = pd.DataFrame(tokenizer_to_num_tokens)
+    fig = px.scatter_matrix(
+        df,
+        dimensions=selected_tokenizers,
+        color_discrete_sequence=px.colors.qualitative.Plotly,
+    )
+    fig.update_layout(
+        title=f"Scatterplot Matrix of Number of Tokens for Selected Tokenizers",
+        width=800,
+        height=800,
+    )
+    st.plotly_chart(fig)
