@@ -39,6 +39,7 @@ tokenizer_names_to_test = [
     "google/flan-t5-base",
     "facebook/mbart-large-50",
     "EleutherAI/gpt-neox-20b",
+    "simbolo-ai/multilingual-partial-syllable-tokenizer",
 ]
 
 with st.sidebar:
@@ -70,8 +71,9 @@ with st.sidebar:
     links = [
         (
             f"[{tokenizer_name}](https://huggingface.co/{tokenizer_name})"
-            if tokenizer_name != "openai/gpt4"
-            else f"[{tokenizer_name}](https://github.com/openai/tiktoken)"
+            if tokenizer_name
+            not in ["openai/gpt4", "simbolo-ai/multilingual-partial-syllable-tokenizer"]
+            else f"[{tokenizer_name}](https://github.com/{tokenizer_name.split('/')[0]}/{tokenizer_name.split('/')[1] if tokenizer_name != 'openai/gpt4' else 'tiktoken'})"
         )
         for tokenizer_name in selected_tokenizers
     ]
