@@ -42,6 +42,16 @@ tokenizer_names_to_test = [
 ]
 
 with st.sidebar:
+
+    st.title("Tokenizer Comparisons")
+    st.write(
+        """
+    Explore the performance of various tokenizers on the Burmese language. This tool visualizes how different tokenizers process the same Burmese text, highlighting disparities in tokenization.
+    
+    This project is inspired by the insights from "All languages are NOT created (tokenized) equal!" Read more about it in the original article on [Art Fish Intelligence](https://www.artfish.ai/p/all-languages-are-not-created-tokenized).
+    """
+    )
+
     all_tokenizers = st.checkbox("Select All Tokenizers")
     if all_tokenizers:
         selected_tokenizers = tokenizer_names_to_test
@@ -68,15 +78,7 @@ with st.sidebar:
     link = "Tokenized using " + ", ".join(links)
     st.markdown(link, unsafe_allow_html=True)
 
-    language_options = sorted(val_data["lang"].unique())
-    selected_language = st.selectbox(
-        "Select language",
-        options=language_options,
-        index=language_options.index("English") if "English" in language_options else 0,
-        label_visibility="collapsed",
-    )
-
-selected_text = reload_example_text_data(selected_language, selected_tokenizers)
+selected_text = reload_example_text_data("Burmese", selected_tokenizers)
 st.subheader(f"**Sampled Text:** `{selected_text}`")
 st.subheader("Number of Tokens")
 st.table(st.session_state.examplesdf)
