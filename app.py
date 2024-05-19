@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import numpy as np
 
 
@@ -21,31 +22,41 @@ def reload_example_text_data(selected_language, selected_tokenizers):
 
 val_data = load_data()
 
+tokenizer_names_to_test = [
+    "openai/gpt4",
+    "Xenova/gpt-4o",
+    "Xenova/claude-tokenizer",
+    "CohereForAI/aya-101",
+    "meta-llama/Meta-Llama-3-70B",
+    "mistralai/Mixtral-8x22B-v0.1",
+    "google/gemma-7b",
+    "facebook/nllb-200-distilled-600M",
+    "xlm-roberta-base",
+    "bert-base-uncased",
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "bigscience/bloom",
+    "StabilityAI/stablelm-base-alpha-7b",
+    "google/flan-t5-base",
+    "facebook/mbart-large-50",
+    "EleutherAI/gpt-neox-20b",
+]
+
 with st.sidebar:
-    tokenizer_names_to_test = [
-        "openai/gpt4",
-        "Xenova/gpt-4o",
-        "Xenova/claude-tokenizer",
-        "CohereForAI/aya-101",
-        "meta-llama/Meta-Llama-3-70B",
-        "mistralai/Mixtral-8x22B-v0.1",
-        "google/gemma-7b",
-        "facebook/nllb-200-distilled-600M",
-        "xlm-roberta-base",
-        "bert-base-uncased",
-        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-        "bigscience/bloom",
-        "StabilityAI/stablelm-base-alpha-7b",
-        "google/flan-t5-base",
-        "facebook/mbart-large-50",
-        "EleutherAI/gpt-neox-20b",
-    ]
-    selected_tokenizers = st.multiselect(
-        "Select tokenizers",
-        options=tokenizer_names_to_test,
-        default=["openai/gpt4", "Xenova/gpt-4o"],
-        label_visibility="collapsed",
-    )
+    all_tokenizers = st.checkbox("Select All Tokenizers")
+    if all_tokenizers:
+        selected_tokenizers = tokenizer_names_to_test
+    else:
+        selected_tokenizers = st.multiselect(
+            "Select tokenizers",
+            options=tokenizer_names_to_test,
+            default=[
+                "openai/gpt4",
+                "Xenova/gpt-4o",
+                "CohereForAI/aya-101",
+                "Xenova/claude-tokenizer",
+            ],
+            label_visibility="collapsed",
+        )
     links = [
         (
             f"[{tokenizer_name}](https://huggingface.co/{tokenizer_name})"
@@ -70,37 +81,33 @@ st.subheader(f"**Sampled Text:** `{selected_text}`")
 st.subheader("Number of Tokens")
 st.table(st.session_state.examplesdf)
 
-# Calculate metrics for each tokenizer
-tokenizer_metrics = {}
-for tokenizer in selected_tokenizers:
-    tokens = val_data[tokenizer].dropna()
-    median = np.median(tokens)
-    min_tokens = np.min(tokens)
-    max_tokens = np.max(tokens)
-    std_dev = np.std(tokens)
-    tokenizer_metrics[tokenizer] = {
-        "Median": median,
-        "Min": min_tokens,
-        "Max": max_tokens,
-        "Range": max_tokens - min_tokens,
-        "Standard Deviation": std_dev,
-    }
+# Create a distribution plot for token density across selected tokenizers
+import plotly.figure_factory as ff
 
-# Display metrics
-st.subheader("Tokenizer Metrics")
-st.json(tokenizer_metrics)
+# Collecting data for all selected tokenizers
+hist_data = [val_data[tokenizer].dropna() for tokenizer in selected_tokenizers]
 
-# Plot for top tokenizers by median token length
-sorted_tokenizers = sorted(tokenizer_metrics.items(), key=lambda x: x[1]["Median"])
-shortest_median = sorted_tokenizers[:5]
-longest_median = sorted_tokenizers[-5:]
+# Creating the distplot with optional histogram
+fig = ff.create_distplot(
+    hist_data, selected_tokenizers, show_hist=False, show_rug=False
+)
+fig.update_layout(
+    title="Token Distribution Density",
+    xaxis_title="Number of Tokens",
+    yaxis_title="Density",
+    height=500,
+)
+st.plotly_chart(fig, use_container_width=True)
+
+
+tokenizer_to_num_tokens = {
+    name: val_data[name].tolist() for name in selected_tokenizers
+}
 
 fig = go.Figure()
-for name, metrics in shortest_median + longest_median:
-    fig.add_trace(go.Bar(x=[name], y=[metrics["Median"]], name=name))
-fig.update_layout(
-    title="Top Tokenizers by Shortest and Longest Median Token Length",
-    xaxis_title="Tokenizer",
-    yaxis_title="Median Token Length",
-)
+for tokenizer_name in selected_tokenizers:
+    fig.add_trace(
+        go.Box(y=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name)
+    )
+fig.update_layout(title="Token Count Variability")
 st.plotly_chart(fig)
