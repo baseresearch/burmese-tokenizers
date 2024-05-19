@@ -41,6 +41,7 @@ tokenizer_names_to_test = [
     "EleutherAI/gpt-neox-20b",
     "simbolo-ai/multilingual-partial-syllable-tokenizer",
     "Cohere/multilingual-22-12",
+    "Cohere/Cohere-embed-multilingual-v3.0",
 ]
 
 with st.sidebar:
