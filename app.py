@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
-import random
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import plotly.express as px
+import numpy as np
 
 
 @st.cache_data
@@ -12,18 +10,13 @@ def load_data():
 
 
 def reload_example_text_data(selected_language, selected_tokenizers):
-    random_id = random.choice(val_data["id"])
-    tempdf = val_data[val_data["id"] == random_id]
-    tempdf = tempdf[tempdf["lang"] == selected_language]
-    tempdf.rename(columns={"lang": "Language"}, inplace=True)
-    tempdf.set_index("Language", inplace=True)
-    columns = ["iso", "text"] + selected_tokenizers
-    tempdf = tempdf[columns]
-    tempdf.columns = ["ISO", "Text"] + [
-        f"Num Tokens ({tokenizer})" for tokenizer in selected_tokenizers
-    ]
-    tempdf.sort_values(by="ISO", inplace=True)
-    st.session_state.examplesdf = tempdf
+    tempdf = val_data[val_data["lang"] == selected_language]
+    random_sample = tempdf.sample(n=1)
+    selected_text = random_sample["text"].iloc[0]
+    random_sample = random_sample[selected_tokenizers]
+    random_sample.columns = [f"{tokenizer}" for tokenizer in selected_tokenizers]
+    st.session_state.examplesdf = random_sample
+    return selected_text
 
 
 val_data = load_data()
@@ -53,6 +46,17 @@ with st.sidebar:
         default=["openai/gpt4", "Xenova/gpt-4o"],
         label_visibility="collapsed",
     )
+    links = [
+        (
+            f"[{tokenizer_name}](https://huggingface.co/{tokenizer_name})"
+            if tokenizer_name != "openai/gpt4"
+            else f"[{tokenizer_name}](https://github.com/openai/tiktoken)"
+        )
+        for tokenizer_name in selected_tokenizers
+    ]
+    link = "Tokenized using " + ", ".join(links)
+    st.markdown(link, unsafe_allow_html=True)
+
     language_options = sorted(val_data["lang"].unique())
     selected_language = st.selectbox(
         "Select language",
@@ -60,54 +64,43 @@ with st.sidebar:
         index=language_options.index("English") if "English" in language_options else 0,
         label_visibility="collapsed",
     )
-    selected_figure = st.selectbox(
-        "Select Plot Type",
-        options=["Boxplot", "Histogram", "Scatterplot"],
-        label_visibility="collapsed",
-    )
 
-st.header("Example Text")
-reload_example_text_data(selected_language, selected_tokenizers)
+selected_text = reload_example_text_data(selected_language, selected_tokenizers)
+st.subheader(f"**Sampled Text:** `{selected_text}`")
+st.subheader("Number of Tokens")
 st.table(st.session_state.examplesdf)
-st.button(
-    "Reload",
-    on_click=reload_example_text_data,
-    args=(selected_language, selected_tokenizers),
+
+# Calculate metrics for each tokenizer
+tokenizer_metrics = {}
+for tokenizer in selected_tokenizers:
+    tokens = val_data[tokenizer].dropna()
+    median = np.median(tokens)
+    min_tokens = np.min(tokens)
+    max_tokens = np.max(tokens)
+    std_dev = np.std(tokens)
+    tokenizer_metrics[tokenizer] = {
+        "Median": median,
+        "Min": min_tokens,
+        "Max": max_tokens,
+        "Range": max_tokens - min_tokens,
+        "Standard Deviation": std_dev,
+    }
+
+# Display metrics
+st.subheader("Tokenizer Metrics")
+st.json(tokenizer_metrics)
+
+# Plot for top tokenizers by median token length
+sorted_tokenizers = sorted(tokenizer_metrics.items(), key=lambda x: x[1]["Median"])
+shortest_median = sorted_tokenizers[:5]
+longest_median = sorted_tokenizers[-5:]
+
+fig = go.Figure()
+for name, metrics in shortest_median + longest_median:
+    fig.add_trace(go.Bar(x=[name], y=[metrics["Median"]], name=name))
+fig.update_layout(
+    title="Top Tokenizers by Shortest and Longest Median Token Length",
+    xaxis_title="Tokenizer",
+    yaxis_title="Median Token Length",
 )
-
-tokenizer_to_num_tokens = {
-    name: val_data[name].tolist() for name in selected_tokenizers
-}
-
-if selected_figure == "Boxplot":
-    fig = go.Figure()
-    for tokenizer_name in selected_tokenizers:
-        fig.add_trace(
-            go.Box(y=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name)
-        )
-    fig.update_layout(title="Distribution of Number of Tokens for Selected Tokenizers")
-    st.plotly_chart(fig)
-elif selected_figure == "Histogram":
-    fig = make_subplots(
-        rows=len(selected_tokenizers), cols=1, subplot_titles=selected_tokenizers
-    )
-    for i, tokenizer_name in enumerate(selected_tokenizers):
-        fig.add_trace(
-            go.Histogram(
-                x=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name
-            ),
-            row=i + 1,
-            col=1,
-        )
-    fig.update_layout(
-        height=200 * len(selected_tokenizers),
-        title_text="Histogram of Number of Tokens",
-    )
-    st.plotly_chart(fig)
-elif selected_figure == "Scatterplot":
-    df = pd.DataFrame(tokenizer_to_num_tokens)
-    fig = px.scatter_matrix(df, dimensions=selected_tokenizers)
-    fig.update_layout(
-        title="Scatterplot Matrix of Number of Tokens for Selected Tokenizers"
-    )
-    st.plotly_chart(fig)
+st.plotly_chart(fig)
