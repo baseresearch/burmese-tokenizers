@@ -1,6 +1,6 @@
 ---
 title: Burmese Tokenizers Comparison
-emoji: 🇲🇲
+emoji: 🐬
 colorFrom: blue
 colorTo: pink
 sdk: streamlit
