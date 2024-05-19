@@ -84,30 +84,34 @@ st.table(st.session_state.examplesdf)
 # Create a distribution plot for token density across selected tokenizers
 import plotly.figure_factory as ff
 
-# Collecting data for all selected tokenizers
-hist_data = [val_data[tokenizer].dropna() for tokenizer in selected_tokenizers]
+if selected_tokenizers:
+    # Collecting data for all selected tokenizers
+    hist_data = [val_data[tokenizer].dropna() for tokenizer in selected_tokenizers]
 
-# Creating the distplot with optional histogram
-fig = ff.create_distplot(
-    hist_data, selected_tokenizers, show_hist=False, show_rug=False
-)
-fig.update_layout(
-    title="Token Distribution Density",
-    xaxis_title="Number of Tokens",
-    yaxis_title="Density",
-    height=500,
-)
-st.plotly_chart(fig, use_container_width=True)
-
-
-tokenizer_to_num_tokens = {
-    name: val_data[name].tolist() for name in selected_tokenizers
-}
-
-fig = go.Figure()
-for tokenizer_name in selected_tokenizers:
-    fig.add_trace(
-        go.Box(y=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name)
+    # Creating the distplot with optional histogram
+    fig = ff.create_distplot(
+        hist_data, selected_tokenizers, show_hist=False, show_rug=False
     )
-fig.update_layout(title="Token Count Variability")
-st.plotly_chart(fig)
+    fig.update_layout(
+        title="Token Distribution Density",
+        xaxis_title="Number of Tokens",
+        yaxis_title="Density",
+        height=500,
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    tokenizer_to_num_tokens = {
+        name: val_data[name].tolist() for name in selected_tokenizers
+    }
+
+    fig = go.Figure()
+    for tokenizer_name in selected_tokenizers:
+        fig.add_trace(
+            go.Box(y=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name)
+        )
+    fig.update_layout(title="Token Count Variability")
+    st.plotly_chart(fig)
+else:
+    st.error(
+        "No tokenizers selected. Please select at least one tokenizer to view the distribution plot."
+    )
