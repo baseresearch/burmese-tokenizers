@@ -94,6 +94,18 @@ st.table(st.session_state.examplesdf)
 import plotly.figure_factory as ff
 
 if selected_tokenizers:
+    tokenizer_to_num_tokens = {
+        name: val_data[name].tolist() for name in selected_tokenizers
+    }
+
+    fig = go.Figure()
+    for tokenizer_name in selected_tokenizers:
+        fig.add_trace(
+            go.Box(y=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name)
+        )
+    fig.update_layout(title="Token Count Variability")
+    st.plotly_chart(fig)
+
     # Collecting data for all selected tokenizers
     hist_data = [val_data[tokenizer].dropna() for tokenizer in selected_tokenizers]
 
@@ -109,17 +121,6 @@ if selected_tokenizers:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    tokenizer_to_num_tokens = {
-        name: val_data[name].tolist() for name in selected_tokenizers
-    }
-
-    fig = go.Figure()
-    for tokenizer_name in selected_tokenizers:
-        fig.add_trace(
-            go.Box(y=tokenizer_to_num_tokens[tokenizer_name], name=tokenizer_name)
-        )
-    fig.update_layout(title="Token Count Variability")
-    st.plotly_chart(fig)
 else:
     st.error(
         "No tokenizers selected. Please select at least one tokenizer to view the distribution plot."
