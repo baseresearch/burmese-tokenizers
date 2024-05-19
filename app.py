@@ -40,6 +40,7 @@ tokenizer_names_to_test = [
     "facebook/mbart-large-50",
     "EleutherAI/gpt-neox-20b",
     "simbolo-ai/multilingual-partial-syllable-tokenizer",
+    "Cohere/multilingual-22-12",
 ]
 
 with st.sidebar:
