@@ -84,6 +84,9 @@ with st.sidebar:
 
 selected_text = reload_example_text_data("Burmese", selected_tokenizers)
 st.subheader(f"**Sampled Text:** `{selected_text}`")
+if st.button("🔄 New sample"):
+    selected_text = reload_example_text_data("Burmese", selected_tokenizers)
+    st.experimental_rerun()
 st.subheader("Number of Tokens")
 st.table(st.session_state.examplesdf)
 
